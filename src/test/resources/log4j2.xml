@@ -3,63 +3,51 @@
 <!-- name      The name of the configuration. -->
 <!-- packages  A comma separated list of package names to search for plugins. -->
 <!-- verbose Enables diagnostic information while loading plugins.-->
-<Configuration status="debug" name="RoutingLoggingConfiguration" packages="org.log4j2plugin" verbose="true">
+<Configuration status="debug" name="RoutingLoggingConfiguration" packages="org.log4j2plugin">
     <Properties>
-        <Property name="routing_filename">${log.path}/type-$${sd:type}.log</Property>
         <Property name="alpha_log_filename">${log.path}/alpha_log.log</Property>
     </Properties>
 
     <Appenders>
         <Console name="STDOUT">
-            <PatternLayout pattern="%d{yyyyMMddHH}{GMT+0} %m%n"/>
+            <PatternLayout pattern="%d{yyyyMMddHH} %m%n"/>
         </Console>
-
-        <Routing name="Routing">
-            <Routes pattern="$${sd:type}">
-                <Route>
-                    <RollingFile name="RollingFile-${sd:type}"
-                                 fileName="${routing_filename}"
-                                 filePattern="${log.path}/%d{yyyyMMdd}{GMT+0}/%d{yyyyMMddHH}{GMT+0}-${sd:type}-${hostName}.%i.log.gz">
-                        <StructuredDataFilter onMatch="DENY" onMismatch="NEUTRAL">
-                            <KeyValuePair key="id.name" value="SKIP"/>
-                        </StructuredDataFilter>
-                        <PatternLayout>
-                            <!-- %K{v} stands for the message passed in StructuredDataMessage map with key "v" -->
-                            <!-- %n stands for new line -->
-                            <Pattern>%d{yyyyMMddHH}{GMT+0},'%d{yyyy-MM-dd HH:mm:ss}{GMT+0}',%K{v}%n</Pattern>
-                        </PatternLayout>
-                        <Policies>
-                            <FTimeBasedTriggeringPolicy interval="1"/>
-                            <SizeBasedTriggeringPolicy size="1024"/>
-                        </Policies>
-                        <DefaultRolloverStrategy max="999"/>
-                    </RollingFile>
-                </Route>
-            </Routes>
-        </Routing>
 
         <RollingFile name="RollingFile-AlphaLog"
                      fileName="${alpha_log_filename}"
-                     filePattern="${log.path}/alpha_log/%d{yyyyMMdd}{GMT+0}-${hostName}.%i.log.gz">
-            <RegexFilter regex="^$" onMatch="DENY" onMismatch="ACCEPT"/>
+                     filePattern="${log.path}/alpha_log/%d{yyyyMMddHHmmss}-${hostName}.log"
+                     >
             <PatternLayout>
                 <Pattern>%d{yyyyMMddHH}{GMT+0} %m %n</Pattern>
             </PatternLayout>
             <Policies>
-                <FTimeBasedTriggeringPolicy interval="1" />
-                <SizeBasedTriggeringPolicy size="1024" />
+                <FTimeBasedTriggeringPolicy interval="1" emptyms="2000"/>
             </Policies>
-            <DefaultRolloverStrategy max="100"/>
+            <KeepEmptyFileRolloverStrategy/>
+        </RollingFile>
+        
+        
+        <RollingFile name="minuteFile"
+                     fileName="${log.path}/testminute.log"
+                     filePattern="${log.path}/testminute/%d{yyyyMMddHHmm}-${hostName}.log"
+                     >
+            <PatternLayout>
+                <Pattern>%d{yyyyMMddHH}{GMT+0} %m %n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <FTimeBasedTriggeringPolicy interval="1" emptyms="2000"/>
+            </Policies>
+            <KeepEmptyFileRolloverStrategy/>
         </RollingFile>
     </Appenders>
 
     <Loggers>
-        <Logger name="EventLogger" level="debug" additivity="false">
-            <AppenderRef ref="Routing"/>
-        </Logger>
 
         <Logger name="AlphaLogger" level="info" additivity="false">
             <AppenderRef ref="RollingFile-AlphaLog"/>
+        </Logger>
+         <Logger name="minuteLogger" level="info" additivity="false">
+            <AppenderRef ref="minuteFile"/>
         </Logger>
 
         <Root level="warn">

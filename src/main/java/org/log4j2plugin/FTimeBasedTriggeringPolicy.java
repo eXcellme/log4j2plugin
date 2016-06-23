@@ -29,19 +29,33 @@ import org.apache.logging.log4j.core.util.Integers;
  */
 @Plugin(name = "FTimeBasedTriggeringPolicy", category = "Core", printObject = true)
 public class FTimeBasedTriggeringPolicy implements TriggeringPolicy {
+    static final int DEFAULT_EMPTYMS = 1000*60*10 ; // 10 minites 
     private long nextRollover;
     private final int interval;
     private final boolean modulate;
+    private final int emptyms;
+    
+    public int getEmptyms() {
+      return emptyms;
+    }
 
     private RollingFileManager manager;
 
-    private FTimeBasedTriggeringPolicy(final int interval, final boolean modulate) {
+    private FTimeBasedTriggeringPolicy(final int interval, final boolean modulate, final int emptyms) {
         this.interval = interval;
         this.modulate = modulate;
+        this.emptyms = emptyms;
         LogRotateThread.registerPolicy(this);
     }
 
+    public boolean isReady(){
+      return this.manager != null;
+    }
+    
     public void checkRollover(final LogEvent event) {
+        if(this.manager == null){ // not initialized yet
+          return ;
+        }
         this.manager.checkRollover(event);
     }
 
@@ -95,9 +109,11 @@ public class FTimeBasedTriggeringPolicy implements TriggeringPolicy {
     @PluginFactory
     public static FTimeBasedTriggeringPolicy createPolicy(
             @PluginAttribute("interval") final String interval,
-            @PluginAttribute("modulate") final String modulate) {
+            @PluginAttribute("modulate") final String modulate,
+            @PluginAttribute("emptyms") final String emptyms) {
         final int increment = Integers.parseInt(interval, 1);
         final boolean mod = Boolean.parseBoolean(modulate);
-        return new FTimeBasedTriggeringPolicy(increment, mod);
+        final int em = Integers.parseInt(emptyms,DEFAULT_EMPTYMS); // by default scan per 10 mins 
+        return new FTimeBasedTriggeringPolicy(increment, mod,em);
     }
 }
